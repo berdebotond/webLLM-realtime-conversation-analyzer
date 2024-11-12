@@ -32,6 +32,9 @@ export const validateConversation = async (
         const responseTimeAvg = calculateResponseTime(messages);
         const keywordMetrics = analyzeKeywords(agentMessages);
         
+        // Calculate quality checks based on conversation analysis
+        const qualityChecks = analyzeQualityChecks(messages);
+        
         // Combine all metrics
         const metrics: ScoreMetrics = {
             ...llamaMetrics,
@@ -52,8 +55,10 @@ export const validateConversation = async (
         return {
             isPolite: metrics.politenessScore > 50,
             isIntroductionComplete: metrics.completionScore > 30,
-            metrics
-        };
+            metrics,
+            qualityChecks: qualityChecks,
+            analysis
+        };  
     } catch (error) {
         console.error('AI Validation Error:', error);
         return {
@@ -69,6 +74,23 @@ export const validateConversation = async (
                 clarity: 0,
                 emotionalIntelligence: 0,
                 technicalAccuracy: 0
+            },
+            qualityChecks: [],
+            analysis: {
+                metrics: {
+                    politenessScore: 0,
+                    completionScore: 0,
+                    responseSpeed: 0,
+                    engagementDuration: 0,
+                    professionalism: 0,
+                    problemResolution: 0,
+                    clarity: 0,
+                    emotionalIntelligence: 0,
+                    technicalAccuracy: 0
+                },
+                suggestions: [],
+                criticalIssues: [],
+                overallRating: 0
             }
         };
     }
@@ -107,11 +129,24 @@ const analyzeKeywords = (messages: Message[]): KeywordMetrics => {
     };
 };
 
+const analyzeQualityChecks = (messages: Message[]): Array<{question: string; passed: boolean}> => {
+    const agentMessages = messages.filter(m => m.sender === 'agent');
+    const firstMessage = agentMessages[0]?.content.toLowerCase() || '';
+
+    return [
+        {
+            question: "Did the agent properly introduce themselves?",
+            passed: firstMessage.includes('hello') || firstMessage.includes('hi') || firstMessage.includes('welcome')
+        },
+        // Add more quality check logic here
+        // ...
+    ];
+};
+
 const generateChatAnalysis = async (
     messages: Message[], 
     metrics: ScoreMetrics
 ): Promise<ChatAnalysis> => {
-    // Use Llama to generate detailed analysis
     return {
         metrics,
         suggestions: [],

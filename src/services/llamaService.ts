@@ -8,20 +8,28 @@ export const analyzeChatWithLlama = async (messages: Message[]) => {
     ).join('\n');
 
     const prompt = `
-        Analyze this customer service conversation and provide metrics in valid JSON format.
+        Analyze this customer service agent's responses and provide metrics in valid JSON format.
+        Focus only on the agent's behavior and responses, ignoring customer messages.
+        Evaluate based on these criteria:
+        - Politeness: Use of courteous language and respectful tone
+        - Professionalism: Maintaining composure and proper business etiquette
+        - Problem Resolution: Effectiveness in addressing the customer's issue
+        - Clarity: Clear and concise communication
+        - Emotional Intelligence: Understanding and appropriately responding to customer emotions
+        - Technical Accuracy: Correctness of technical information provided
+
         Return ONLY a JSON object with these numeric values (0-100):
         {
             "politeness": number,
             "professionalism": number,
             "problemResolution": number,
             "clarity": number,
-            "responseSpeed": number,
             "emotionalIntelligence": number,
             "technicalAccuracy": number,
             "completionScore": number
         }
 
-        Conversation to analyze:
+        Agent responses to analyze:
         ${conversation}
     `;
 
@@ -52,7 +60,6 @@ export const analyzeChatWithLlama = async (messages: Message[]) => {
                 professionalism: 50,
                 problemResolution: 50,
                 clarity: 50,
-                responseSpeed: 50,
                 emotionalIntelligence: 50,
                 technicalAccuracy: 50,
                 completionScore: 50

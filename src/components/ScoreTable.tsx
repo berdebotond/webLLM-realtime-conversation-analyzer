@@ -2,27 +2,33 @@ import React from 'react';
 import { ScoreMetrics } from '../types';
 
 interface ScoreTableProps {
-    metrics: ScoreMetrics;
+    metrics: ScoreMetrics[];
 }
 
 const ScoreTable: React.FC<ScoreTableProps> = ({ metrics }) => {
     const formatScore = (score: number) => `${score.toFixed(1)}%`;
 
+    // Calculate average for any metric
+    const calculateAverage = (metricKey: keyof ScoreMetrics) => {
+        const sum = metrics.reduce((acc, curr) => acc + curr[metricKey], 0);
+        return metrics.length > 0 ? sum / metrics.length : 0;
+    };
+
     const metricGroups = [
         {
             title: "Communication",
             metrics: [
-                { label: "Politeness", value: metrics.politenessScore },
-                { label: "Clarity", value: metrics.clarity },
-                { label: "Emotional Intelligence", value: metrics.emotionalIntelligence }
+                { label: "Politeness", value: calculateAverage('politenessScore') },
+                { label: "Clarity", value: calculateAverage('clarity') },
+                { label: "Emotional Intelligence", value: calculateAverage('emotionalIntelligence') }
             ]
         },
         {
             title: "Performance",
             metrics: [
-                { label: "Problem Resolution", value: metrics.problemResolution },
-                { label: "Response Speed", value: metrics.responseSpeed },
-                { label: "Technical Accuracy", value: metrics.technicalAccuracy }
+                { label: "Problem Resolution", value: calculateAverage('problemResolution') },
+                { label: "Response Speed", value: calculateAverage('responseSpeed') },
+                { label: "Technical Accuracy", value: calculateAverage('technicalAccuracy') }
             ]
         }
     ];
@@ -32,7 +38,12 @@ const ScoreTable: React.FC<ScoreTableProps> = ({ metrics }) => {
             <h2>Agent Performance Metrics</h2>
             {metricGroups.map(group => (
                 <div key={group.title} className="metric-group">
-                    <h3>{group.title}</h3>
+                    <h3>
+                        {group.title}
+                        <span className={`score-value ${getScoreClass(group.metrics[0].value)}`}>
+                            (Avg: {formatScore(group.metrics[0].value)})
+                        </span>
+                    </h3>
                     <table>
                         <tbody>
                             {group.metrics.map(metric => (

@@ -29,4 +29,6 @@ export interface AIValidationResponse {
     isPolite: boolean;
     isIntroductionComplete: boolean;
     metrics: ScoreMetrics;
+    qualityChecks: Array<{question: string; passed: boolean}>;
+    analysis: ChatAnalysis;
 } 

@@ -1,29 +1,101 @@
 .app-container {
     display: flex;
+    flex-direction: column;
     height: 100vh;
-    padding: 20px;
-    gap: 20px;
-    background-color: #f5f5f5;
+    overflow: hidden;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+.live-dashboard {
+    background: #fff;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 10px;
+}
+
+.requirements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    padding: 10px;
+}
+
+.requirement-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.requirement-item.completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.requirement-item.pending {
+    background: #f8f9fa;
+    color: #6c757d;
+}
+
+.check-icon {
+    margin-right: 8px;
+    font-size: 1.2em;
+}
+
+.check-label {
+    flex: 1;
+}
+
+.check-time {
+    font-size: 0.8em;
+    color: #666;
+}
+
+.logs-toggle-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.logs-toggle-button button {
+    padding: 10px 20px;
+    border-radius: 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.bottom-logger {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 0;
+    background: white;
+    transition: height 0.3s ease;
+    overflow: auto;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+}
+
+.bottom-logger.show {
+    height: 40vh;
 }
 
 .chat-pane {
-    flex: 2;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    overflow: hidden;
-    background-color: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
-}
-
-.score-pane {
     flex: 1;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 20px;
-    background-color: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
 }
 
 .chat-container {
@@ -32,106 +104,14 @@
     padding: 20px;
 }
 
-.message {
-    margin-bottom: 15px;
-    padding: 10px 15px;
-    border-radius: 8px;
-    max-width: 70%;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.user-message {
-    background-color: #e3f2fd;
-    margin-left: auto;
-}
-
-.agent-message {
-    background-color: #f5f5f5;
-    margin-right: auto;
-}
-
-.message-timestamp {
-    font-size: 0.8em;
-    color: #666;
-    margin-top: 5px;
-}
-
-.score-table {
-    height: 100%;
-}
-
-.score-table h2 {
-    color: #333;
-    margin-bottom: 20px;
-    text-align: center;
-}
-
-.score-table table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.score-table td {
-    padding: 15px;
-    border-bottom: 1px solid #eee;
-}
-
-.score-table td:first-child {
-    color: #666;
-}
-
-.score-table td:last-child {
-    font-weight: bold;
-}
-
 .controls {
-    padding: 20px;
+    margin-top: auto;
+    padding: 15px;
     border-top: 1px solid #eee;
-    text-align: center;
 }
 
-.simulate-button {
-    padding: 10px 20px;
-    background-color: #2196f3;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s;
+.score-pane {
+    width: 300px;
+    border-left: 1px solid #eee;
+    overflow-y: auto;
 }
-
-.simulate-button:hover {
-    background-color: #1976d2;
-}
-
-.simulate-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-
-.metric-group {
-    margin-bottom: 24px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 16px;
-}
-
-.metric-group h3 {
-    color: #2c3e50;
-    font-size: 1.1em;
-    margin-bottom: 12px;
-    border-bottom: 2px solid #e9ecef;
-    padding-bottom: 8px;
-}
-
-.score-value {
-    font-weight: bold;
-    padding: 4px 8px;
-    border-radius: 4px;
-}
-
-.score-value.excellent { color: #2ecc71; }
-.score-value.good { color: #3498db; }
-.score-value.average { color: #f1c40f; }
-.score-value.needs-improvement { color: #e74c3c; } 
