@@ -14,18 +14,20 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages }) => {
 
     return (
         <div className="chat-container">
-            {messages.slice(-10).map((message) => (
-                <div 
-                    key={message.id} 
-                    className={`message ${message.sender}-message`}
-                >
-                    <div className="message-content">{message.content}</div>
+            {messages.map((message, index) => (
+                <div key={`${message.timestamp}-${index}`} className={`message ${message.sender}-message`}>
+                    <div className="message-content">
+                        {message.content}
+                    </div>
                     <div className="message-timestamp">
-                        {message.timestamp.toLocaleTimeString()}
+                        {message.timestamp.toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}
                     </div>
                 </div>
             ))}
-            <div ref={chatEndRef} />
+            <div ref={chatEndRef} style={{ float: 'left', clear: 'both' }} />
         </div>
     );
 };

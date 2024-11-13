@@ -1,5 +1,6 @@
 import { Message, AIValidationResponse, ChatAnalysis } from '../types';
 import { analyzeChatWithLlama } from './llamaService';
+import { webLLMService } from './webLlmService';
 
 interface ScoreMetrics {
     politenessScore: number;
@@ -21,11 +22,18 @@ interface KeywordMetrics {
 }
 
 export const validateConversation = async (
-    messages: Message[]
+    messages: Message[],
+    selectedModel: string
 ): Promise<AIValidationResponse> => {
     try {
-        // Get Llama analysis
-        const llamaMetrics = await analyzeChatWithLlama(messages) as Partial<ScoreMetrics>;
+        let chatAnalysis;
+        
+        // Use WebLLM if a supported model is selected, otherwise fallback to Llama API
+        if (selectedModel !== 'llama') {
+            chatAnalysis = await webLLMService.analyzeChatWithWebLLM(messages);
+        } else {
+            chatAnalysis = await analyzeChatWithLlama(messages);
+        }
 
         // Calculate basic metrics
         const agentMessages = messages.filter(m => m.sender === 'agent');
@@ -37,62 +45,31 @@ export const validateConversation = async (
         
         // Combine all metrics
         const metrics: ScoreMetrics = {
-            ...llamaMetrics,
-            ...keywordMetrics,
             responseSpeed: 100 - (responseTimeAvg / 10),
             engagementDuration: messages.length * 10,
-            completionScore: llamaMetrics.completionScore ?? 0,
-            professionalism: llamaMetrics.professionalism ?? 0,
-            problemResolution: llamaMetrics.problemResolution ?? 0,
-            clarity: llamaMetrics.clarity ?? 0,
-            emotionalIntelligence: llamaMetrics.emotionalIntelligence ?? 0,
-            technicalAccuracy: llamaMetrics.technicalAccuracy ?? 0
+            completionScore: chatAnalysis?.completionScore ?? 0,
+            professionalism: chatAnalysis?.professionalism ?? 0,
+            problemResolution: chatAnalysis?.problemResolution ?? 0,
+            clarity: chatAnalysis?.clarity ?? 0,
+            emotionalIntelligence: chatAnalysis?.emotionalIntelligence ?? 0,
+            technicalAccuracy: chatAnalysis?.technicalAccuracy ?? 0,
+            ...keywordMetrics,
+            ...chatAnalysis?.metrics ?? {}
         };
 
         // Generate insights
         const analysis = await generateChatAnalysis(messages, metrics);
 
         return {
-            isPolite: metrics.politenessScore > 50,
-            isIntroductionComplete: metrics.completionScore > 30,
+            isPolite: metrics?.politenessScore > 50,
+            isIntroductionComplete: metrics?.completionScore > 30,
             metrics,
             qualityChecks: qualityChecks,
             analysis
         };  
     } catch (error) {
         console.error('AI Validation Error:', error);
-        return {
-            isPolite: false,
-            isIntroductionComplete: false,
-            metrics: {
-                politenessScore: 0,
-                completionScore: 0,
-                responseSpeed: 0,
-                engagementDuration: 0,
-                professionalism: 0,
-                problemResolution: 0,
-                clarity: 0,
-                emotionalIntelligence: 0,
-                technicalAccuracy: 0
-            },
-            qualityChecks: [],
-            analysis: {
-                metrics: {
-                    politenessScore: 0,
-                    completionScore: 0,
-                    responseSpeed: 0,
-                    engagementDuration: 0,
-                    professionalism: 0,
-                    problemResolution: 0,
-                    clarity: 0,
-                    emotionalIntelligence: 0,
-                    technicalAccuracy: 0
-                },
-                suggestions: [],
-                criticalIssues: [],
-                overallRating: 0
-            }
-        };
+        return getDefaultResponse();
     }
 };
 
@@ -153,4 +130,37 @@ const generateChatAnalysis = async (
         criticalIssues: [],
         overallRating: metrics.completionScore
     }
-}; 
+};
+
+const getDefaultResponse = (): AIValidationResponse => ({
+    isPolite: false,
+    isIntroductionComplete: false,
+    metrics: {
+        politenessScore: 50,
+        completionScore: 50,
+        responseSpeed: 50,
+        engagementDuration: 0,
+        professionalism: 50,
+        problemResolution: 50,
+        clarity: 50,
+        emotionalIntelligence: 50,
+        technicalAccuracy: 50
+    },
+    qualityChecks: [],
+    analysis: {
+        metrics: {
+            politenessScore: 50,
+            completionScore: 50,
+            responseSpeed: 50,
+            engagementDuration: 0,
+            professionalism: 50,
+            problemResolution: 50,
+            clarity: 50,
+            emotionalIntelligence: 50,
+            technicalAccuracy: 50
+        },
+        suggestions: [],
+        criticalIssues: [],
+        overallRating: 50
+    }
+}); 

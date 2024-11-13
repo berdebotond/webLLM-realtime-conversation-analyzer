@@ -5,6 +5,8 @@ import AILogger from './components/AILogger';
 import { Message, ScoreMetrics } from './types';
 import { validateConversation } from './services/aiValidation';
 import './App.css';
+import ModelSelector from './components/ModelSelector';
+import { webLLMService } from './services/webLlmService';
 
 const CONVERSATION_SCENARIOS = {
     polite: {
@@ -152,11 +154,14 @@ const App: React.FC = () => {
         { question: "Follow-up Offered", passed: false, timestamp: null },
         { question: "Closing Confirmation", passed: false, timestamp: null },
     ]);
+    const [selectedModel, setSelectedModel] = useState<string>("llama");
+    const [isModelLoading, setIsModelLoading] = useState(false);
+    const [modelProgress, setModelProgress] = useState<{ text: string; progress: number }>({ text: '', progress: 0 });
 
     useEffect(() => {
         const updateMetrics = async () => {
             if (messages.length > 0) {
-                const validation = await validateConversation(messages.slice(-10));
+                const validation = await validateConversation(messages.slice(-10), selectedModel);
                 setMetricsHistory(prev => [...prev, validation.metrics]);
                 
                 setAiLogs(prev => [...prev, {
@@ -167,42 +172,49 @@ const App: React.FC = () => {
         };
 
         updateMetrics();
-    }, [messages]);
+    }, [messages, selectedModel]);
 
     useEffect(() => {
         if (messages.length > 0) {
             const allMessages = messages.map(m => m.content.toLowerCase());
             
-            // Create a new copy of quality checks
-            const updatedChecks = qualityChecks.map(check => {
-                switch (check.question) {
-                    case "Agent Introduction":
-                        if (!check.passed && (allMessages[0]?.includes("hello") || allMessages[0]?.includes("welcome"))) {
-                            return { ...check, passed: true, timestamp: new Date() };
-                        }
-                        break;
-                    case "Identity Verification":
-                        if (!check.passed && allMessages.some(m => m.includes("account") && m.includes("number"))) {
-                            return { ...check, passed: true, timestamp: new Date() };
-                        }
-                        break;
-                    // Add more cases for other checks
-                }
-                return check;
-            });
-
-            setQualityChecks(updatedChecks);
+            setQualityChecks(prevChecks => 
+                prevChecks.map(check => {
+                    switch (check.question) {
+                        case "Agent Introduction":
+                            return !check.passed && (allMessages[0]?.includes("hello") || allMessages[0]?.includes("welcome"))
+                                ? { ...check, passed: true, timestamp: new Date() }
+                                : check;
+                        case "Identity Verification":
+                            return !check.passed && allMessages.some(m => m.includes("account") && m.includes("number"))
+                                ? { ...check, passed: true, timestamp: new Date() }
+                                : check;
+                        default:
+                            return check;
+                    }
+                })
+            );
         }
-    }, [messages, qualityChecks]);
+    }, [messages]);
 
-    const simulateMessage = (index: number) => {
+    const simulateMessage = async (index: number) => {
+        if (index >= CONVERSATION_SCENARIOS[selectedScenario as keyof typeof CONVERSATION_SCENARIOS].messages.length) {
+            setIsSimulating(false);
+            return;
+        }
+
         const newMessage: Message = {
             id: Date.now().toString(),
             content: CONVERSATION_SCENARIOS[selectedScenario as keyof typeof CONVERSATION_SCENARIOS].messages[index],
             sender: index % 2 === 0 ? 'agent' : 'user',
             timestamp: new Date(),
         };
+
         setMessages(prev => [...prev, newMessage]);
+
+        // Add delay for next message
+        const delay = CONVERSATION_SCENARIOS[selectedScenario as keyof typeof CONVERSATION_SCENARIOS].messages.length - index;
+        setTimeout(() => simulateMessage(index + 1), delay * 2000);
     };
 
     const startSimulation = () => {
@@ -217,7 +229,7 @@ const App: React.FC = () => {
                 if (index === scenarioMessages.length - 1) {
                     setIsSimulating(false);
                 }
-            }, index * 3000);
+            }, index * 2000);
         });
     };
 
@@ -248,11 +260,35 @@ const App: React.FC = () => {
                     </div>
                     <ChatBox messages={messages} />
                     <div className="controls">
+                        <ModelSelector
+                            selectedModel={selectedModel}
+                            onModelChange={async (model) => {
+                                setSelectedModel(model);
+                                if (model !== "llama") {
+                                    setIsModelLoading(true);
+                                    try {
+                                        await webLLMService.initializeModel(model, (progress) => {
+                                            setModelProgress({
+                                                text: progress.text || '',
+                                                progress: progress.progress || 0
+                                            });
+                                        });
+                                        setIsModelLoading(false);
+                                    } catch (error) {
+                                        console.error("Failed to load WebLLM model:", error);
+                                        setIsModelLoading(false);
+                                        setSelectedModel("llama");
+                                    }
+                                }
+                            }}
+                            isLoading={isModelLoading}
+                            loadingProgress={modelProgress}
+                        />
                         <select 
                             value={selectedScenario}
                             onChange={(e) => setSelectedScenario(e.target.value)}
                             className="scenario-select"
-                            disabled={isSimulating}
+                            disabled={isSimulating || isModelLoading}
                         >
                             {Object.entries(CONVERSATION_SCENARIOS).map(([key, scenario]) => (
                                 <option key={key} value={key}>
@@ -262,7 +298,7 @@ const App: React.FC = () => {
                         </select>
                         <button 
                             onClick={startSimulation}
-                            disabled={isSimulating}
+                            disabled={isSimulating || isModelLoading}
                             className="simulate-button"
                         >
                             {isSimulating ? 'Simulating...' : 'Start Simulation'}
